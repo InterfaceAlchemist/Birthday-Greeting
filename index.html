@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Happy Birthday 🎂</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<canvas id="cf"></canvas>
+
+<section class="screen on" id="s1">
+  <p id="s1top">Someone left you something…</p>
+  <p id="s1hint">Tap the gift</p>
+</section>
+
+<section class="screen" id="s2">
+  <h1>Make a wish!</h1>
+  <div class="stack">
+    <p id="hint"></p>
+    <button id="mic" hidden>🎤 Blow with your mic</button>
+    <button id="blow" disabled>Blow them all</button>
+  </div>
+</section>
+
+<section class="screen" id="s3">
+  <div class="card"><p id="line"></p></div>
+  <div class="stack">
+    <div class="dots" id="dots"></div>
+    <button id="next">Next</button>
+  </div>
+</section>
+
+<section class="screen" id="s4">
+  <div class="stack">
+    <h1 id="title"></h1>
+    <p>Pop a balloon to get a wish</p>
+  </div>
+  <div class="stack">
+    <div id="wish" aria-live="polite"></div>
+    <button id="reply" hidden></button>
+    <button class="ghost" id="again">Watch again</button>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script type="module" src="js/config.js"></script>
+<script type="module" src="js/script.js"></script>
+</body>
+</html>

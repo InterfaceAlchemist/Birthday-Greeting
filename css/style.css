@@ -1,0 +1,37 @@
+:root{
+  --bg1:#ffe9f1;--bg2:#e9ddff;--text:#3b1a4a;--muted:#7a5a8c;--card:#ffffffd9;--pop:#ffffff;--pink:#ff5c93;--btn:#ff5c93;--btntext:#fff;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg1:#1d1038;--bg2:#3a1450;--text:#fff1f7;--muted:#c9b0e0;--card:#ffffff17;--pop:#3a1a5c;--btn:#ff7aa6;--btntext:#2a0f3a}
+}
+:root[data-theme="dark"]{--bg1:#1d1038;--bg2:#3a1450;--text:#fff1f7;--muted:#c9b0e0;--card:#ffffff17;--pop:#3a1a5c;--btn:#ff7aa6;--btntext:#2a0f3a}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg1) linear-gradient(160deg,var(--bg1),var(--bg2)) fixed;color:var(--text);
+  font-family:"Fredoka",ui-rounded,"Segoe UI",system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
+#gl{position:fixed;inset:0;width:100%;height:100%;z-index:0;transition:opacity .3s;touch-action:manipulation}
+#cf{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+.screen{display:none;position:relative;z-index:1;pointer-events:none;min-height:100%;flex-direction:column;align-items:center;justify-content:space-between;gap:18px;padding:22px 20px 28px;text-align:center;max-width:520px;margin:0 auto}
+.screen.on{display:flex;animation:in .5s ease}
+.screen button,.card{pointer-events:auto}
+@keyframes in{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+.stack{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
+h1{font-size:clamp(2rem,9vw,3rem);line-height:1.1;margin:0;font-weight:600}
+p{margin:0;font-size:1.1rem;line-height:1.5;color:var(--muted)}
+button{font:inherit;font-weight:600;font-size:1.1rem;border:0;border-radius:999px;padding:14px 30px;background:var(--btn);color:var(--btntext);cursor:pointer;min-height:48px;box-shadow:0 6px 0 #0002;transition:transform .1s,opacity .2s}
+button:active{transform:translateY(3px);box-shadow:0 3px 0 #0002}
+button:disabled{opacity:.45;pointer-events:none}
+button.ghost{background:transparent;color:var(--muted);box-shadow:none;font-weight:500}
+.card{background:var(--card);backdrop-filter:blur(8px);border-radius:24px;padding:22px 20px;width:100%;min-height:130px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px #0002}
+.card p{color:var(--text);font-size:1.3rem;animation:in .4s ease}
+.dots{display:flex;gap:8px}.dots i{width:9px;height:9px;border-radius:50%;background:var(--muted);opacity:.35;transition:.3s}.dots i.on{opacity:1;background:var(--pink)}
+.poptxt{position:fixed;z-index:6;pointer-events:none;font-weight:600;font-size:1.8rem;white-space:nowrap}
+#wish{min-height:3.2em;color:var(--text);font-size:1.2rem;font-weight:500}
+#wish span{display:inline-block;animation:in .4s ease}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-delay:0s!important}}
+.wishpop{position:fixed;z-index:6;pointer-events:none;width:max-content;max-width:min(240px,70vw);padding:14px 18px;border:3px solid;border-radius:20px;background:var(--pop);color:var(--text);font-size:1.15rem;font-weight:500;line-height:1.35;text-align:center;box-shadow:0 10px 28px #0004;opacity:0}
+#s2 { padding-top: 60px; }  /* "Make a wish!" title */
+#s3 { padding-top: 90px; }  /* the message card (Today is all about you...) */
+#s1hint{font-size:1.25rem;font-weight:500;color:var(--text);font-variant-numeric:tabular-nums}
