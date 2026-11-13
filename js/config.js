@@ -25,6 +25,6 @@ window.CONFIG = {
   //   "sms:+639XXXXXXXXX?&body={msg}"                          (text message)
   //   "https://m.me/YOUR_FB_USERNAME"                          (Messenger)
   //   "mailto:you@email.com?subject=Thank%20you&body={msg}"    (email)
-  reply: { label: "Send {from} a thank-you 💌", url: "sms:+639123016410?&body={msg}", message: "Thank you for the birthday greeting! 🥹" },
+  reply: { label: "Reply to {from} on Instagram 💌", url: "https://ig.me/m/404notjeremi", message: "" },
   finalWish: "That’s every wish. Now go eat some cake! 🍰"
 };
