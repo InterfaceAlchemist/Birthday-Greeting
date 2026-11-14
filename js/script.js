@@ -445,12 +445,12 @@ async function makeCard() {
   if ($("cardImg").dataset.u) URL.revokeObjectURL($("cardImg").dataset.u);
   $("cardImg").dataset.u = $("cardImg").src = URL.createObjectURL(blob);
 }
-$("card").onclick = async () => { $("card").disabled = true; try { await makeCard(); $("cardView").hidden = false; } catch (e) {} $("card").disabled = false; };
+$("card").onclick = async () => { $("card").disabled = true; try { await makeCard(); $("cardShare").hidden = !(navigator.canShare && navigator.canShare({ files: [CARD] }) && matchMedia("(pointer: coarse)").matches); $("cardView").hidden = false; } catch (e) {} $("card").disabled = false; };
 $("cardClose").onclick = () => { $("cardView").hidden = true; };
-$("cardSave").onclick = async () => {
-  if (navigator.canShare && navigator.canShare({ files: [CARD] })) { try { await navigator.share({ files: [CARD], title: "Birthday card" }); return; } catch (e) { if (e.name === "AbortError") return; } }
+$("cardSave").onclick = () => { // always downloads the PNG
   const a = document.createElement("a"); a.href = $("cardImg").src; a.download = "birthday-card.png"; document.body.appendChild(a); a.click(); a.remove();
 };
+$("cardShare").onclick = async () => { try { await navigator.share({ files: [CARD], title: "Birthday card" }); } catch (e) {} }; // phone share sheet
 
 /* ---------- Scene manager ---------- */
 const ray = new THREE.Raycaster();
