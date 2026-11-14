@@ -25,6 +25,12 @@ function tune() {
     });
   } catch (e) {}
 }
+function clink() {
+  try {
+    const A = ac(), t = A.currentTime;
+    [1800, 2400].forEach((f, i) => { const o = A.createOscillator(), g = A.createGain(), s = t + i * .07; o.type = "square"; o.frequency.value = f; g.gain.setValueAtTime(.08, s); g.gain.exponentialRampToValueAtTime(.0001, s + .09); o.connect(g); g.connect(A.destination); o.start(s); o.stop(s + .1); });
+  } catch (e) {}
+}
 function popSound() {
   try {
     const A = ac(), n = A.sampleRate * .09 | 0, b = A.createBuffer(1, n, A.sampleRate), d = b.getChannelData(0);
@@ -94,9 +100,10 @@ function sparkles(S, n, rad, h0, h1) {
 const gift = makeScene(2.7, [0, 3.2, 11], [0, 1.3, 0]); ground(gift, 0);
 const gG = new THREE.Group(); gift.scene.add(gG);
 const gold = mat(0xffc233, { roughness: .3, metalness: .35 });
-gG.add(mesh(new THREE.BoxGeometry(2.4, 1.8, 2.4), mat(0xff5c93), 0, .9, 0));
-gG.add(mesh(new THREE.BoxGeometry(.5, 1.82, 2.44), gold, 0, .9, 0));
-gG.add(mesh(new THREE.BoxGeometry(2.44, 1.82, .5), gold, 0, .9, 0));
+const pinkM = mat(0xff5c93); // hollow box: 4 walls + floor, so it is empty when the lid comes off
+[[2.4, 1.8, .12, 0, .9, 1.14], [2.4, 1.8, .12, 0, .9, -1.14], [.12, 1.8, 2.16, 1.14, .9, 0], [.12, 1.8, 2.16, -1.14, .9, 0]].forEach(([w, h, d, x, y, z]) => gG.add(mesh(new THREE.BoxGeometry(w, h, d), pinkM, x, y, z)));
+gG.add(mesh(new THREE.BoxGeometry(2.16, .12, 2.16), mat(0x7a2250), 0, .06, 0));
+[[.5, 1.82, .14, 0, .91, 1.14], [.5, 1.82, .14, 0, .91, -1.14], [.14, 1.82, .5, 1.14, .91, 0], [.14, 1.82, .5, -1.14, .91, 0]].forEach(([w, h, d, x, y, z]) => gG.add(mesh(new THREE.BoxGeometry(w, h, d), gold, x, y, z)));
 const lid = new THREE.Group(); lid.position.y = 1.8; gG.add(lid);
 lid.add(mesh(new THREE.BoxGeometry(2.7, .55, 2.7), mat(0xff7aa6), 0, .275, 0));
 lid.add(mesh(new THREE.BoxGeometry(.5, .57, 2.74), gold, 0, .275, 0));
@@ -108,30 +115,32 @@ lid.add(mesh(new THREE.BoxGeometry(2.74, .57, .5), gold, 0, .275, 0));
 lid.add(mesh(new THREE.SphereGeometry(.24, 20, 16), gold, 0, .72, 0));
 const gGlow = sprite(TEX.warm, 1, 0); gGlow.position.set(0, 2.1, 0); gG.add(gGlow);
 const gLight = new THREE.PointLight(0xffd27a, 0, 12); gLight.position.set(0, 2.4, 1.5); gift.scene.add(gLight);
-const lockG = new THREE.Group(); lockG.position.set(0, 1, 1.3); gG.add(lockG);
+const lockG = new THREE.Group(); lockG.position.set(0, 1, 1.4); lockG.scale.setScalar(1.6); gG.add(lockG);
 lockG.add(mesh(new THREE.BoxGeometry(.6, .5, .2), mat(0xd4a017, { roughness: .25, metalness: .7 })));
 const shackle = mesh(new THREE.TorusGeometry(.17, .045, 10, 24, Math.PI), mat(0xbfc5cc, { roughness: .2, metalness: .85 }), 0, .25, 0); lockG.add(shackle);
 const kh = mesh(new THREE.CylinderGeometry(.05, .05, .04, 10), mat(0x3a2a00), 0, 0, .11); kh.rotation.x = Math.PI / 2; lockG.add(kh);
 const LK = { locked: false, fall: 1e9 };
 const gSp = sparkles(gift, 16, 2.8, 0, 4.5), GS = { open: false, t0: 0, nope: -9 };
-gift.enter = () => { lockG.visible = LK.locked; lockG.position.set(0, 1, 1.3); lockG.rotation.set(0, 0, 0); shackle.position.y = .25; GS.open = false; lid.position.set(0, 1.8, 0); lid.rotation.set(0, 0, 0); gG.rotation.set(0, 0, 0); gGlow.material.opacity = 0; gLight.intensity = 0; };
+gift.enter = () => { lockG.visible = LK.locked; lockG.position.set(0, 1, 1.4); lockG.rotation.set(0, 0, 0); shackle.position.y = .25; gift.off.y = 1.9; GS.open = false; lid.position.set(0, 1.8, 0); lid.rotation.set(0, 0, 0); gG.rotation.set(0, 0, 0); gGlow.material.opacity = 0; gLight.intensity = 0; };
 gift.update = (t, dt) => {
   const lt = t - gift.t0; gSp(t, dt);
   if (!GS.open) {
     gG.rotation.y = Math.sin(lt * .8) * .5 + .3; gG.position.y = Math.sin(lt * 2) * .08; lid.position.y = 1.8 + Math.max(0, Math.sin(lt * 2.2)) * .06;
     const n = t - GS.nope; gG.rotation.z = n < .5 ? Math.sin(n * 50) * .1 * (1 - n / .5) : Math.sin(lt * 3) * .015;
-    const f = t - LK.fall;
-    if (f >= 0) { const q = Math.max(0, f - .35); shackle.position.y = .25 + cl(f / .25) * .12; lockG.position.y = 1 - q * q * 6; lockG.rotation.z = q * 2; lockG.visible = f < 1.2; }
+    const rn = t - GS.nope, f = t - LK.fall;
+    if (f < 0) { const d = Math.max(0, 1 - rn / .7); lockG.rotation.set(Math.sin(rn * 26) * .15 * d, 0, Math.sin(rn * 40) * .4 * d); shackle.position.y = .25 + Math.abs(Math.sin(rn * 40)) * .05 * d; }
+    else { const q = Math.max(0, f - .35); shackle.position.y = .25 + cl(f / .25) * .12; lockG.position.y = 1 - q * q * 6; lockG.rotation.z = q * 2; lockG.visible = f < 1.2; }
     return;
   }
   const a = t - GS.t0, u = cl((a - .35) / 1);
   gG.rotation.z = a < .4 ? Math.sin(a * 60) * .09 * (1 - a / .4) : 0;
+  gift.off.y = 1.9 + 3.6 * (1 - Math.pow(1 - cl((a - .3) / .9), 3));
   lid.position.set(u * 1.2, 1.8 + (1 - Math.pow(1 - u, 3)) * 7, 0); lid.rotation.set(u * .9, 0, -u * 1.3);
   gGlow.material.opacity = u > 0 ? Math.sin(Math.min(1, u * 1.5) * Math.PI) * .95 : 0; gGlow.scale.setScalar(1 + u * 7); gLight.intensity = u > 0 ? (1 - u) * 3 : 0;
 };
 function openGift() {
   if (GS.open) return;
-  if (isLocked()) { GS.nope = tNow; if (navigator.vibrate) navigator.vibrate(30); return; }
+  if (isLocked()) { GS.nope = tNow; clink(); if (navigator.vibrate) navigator.vibrate(30); showWish("🔒 Still locked! It opens when the countdown ends.", innerWidth / 2, innerHeight * .4, "#ffb703"); return; }
   GS.open = true; GS.t0 = tNow;
   setTimeout(() => burst(innerWidth / 2, innerHeight / 2, 90), 450);
   setTimeout(() => { show("s2"); go(cakeS); }, 1500);
@@ -186,12 +195,12 @@ const cs = [-.5, 0, .5].map((x, i) => {
   const c = { g, flame, gl, light, hit, ph: Math.random() * 6, out: false, outT: 0, y0: 2.85 }; hit.userData.c = c; return c;
 });
 const cSp = sparkles(cakeS, 18, 3.3, -.5, 5);
-const CK = { ready: false, lit: 3, mood: 0, happy: false, giggle: -9, H: { t0: -9, h: .3, d: .7 }, SP: -9, nextHop: 99, nextBlink: 2, blink: -9, shift: 0 };
+const CK = { ready: false, lit: 3, mood: 0, happy: false, giggle: -9, dance: -9, taps: [], H: { t0: -9, h: .3, d: .7 }, SP: -9, nextHop: 99, nextBlink: 2, blink: -9, shift: 0 };
 const aim = new THREE.Vector2(), mouse = new THREE.Vector2();
 addEventListener("pointermove", e => mouse.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1));
 const hop = (h, d) => { CK.H.t0 = tNow; CK.H.h = h; CK.H.d = d; };
 cakeS.enter = () => {
-  Object.assign(CK, { ready: false, lit: 3, happy: false, mood: 0, giggle: -9, SP: -9, shift: 0, nextHop: cakeS.t0 + 7 }); CK.H.t0 = -9;
+  Object.assign(CK, { ready: false, lit: 3, happy: false, mood: 0, giggle: -9, dance: -9, taps: [], SP: -9, shift: 0, nextHop: cakeS.t0 + 7 }); CK.H.t0 = -9;
   stopMic(); $("mic").hidden = true; $("blow").classList.remove("ghost"); cs.forEach(c => c.out = false); cakeS.look.y = 1.3; $("hint").textContent = "Baking your cake…"; $("blow").disabled = true;
 };
 cakeS.update = (t, dt) => {
@@ -216,7 +225,8 @@ cakeS.update = (t, dt) => {
   const hu = (t - CK.H.t0) / CK.H.d; let hy = 0, sq = 0;
   if (hu >= 0 && hu < 1) { hy = Math.sin(hu * Math.PI) * CK.H.h; sq = hu < .15 ? -hu / .15 * .08 : hu > .85 ? -(1 - hu) / .15 * .08 : .05; }
   const sy = 1 + Math.sin(t * 2.2) * .012 + sq;
-  cake.rotation.y = Math.sin(t * .7) * .1 + inOut(cl((t - CK.SP) / 1.4)) * Math.PI * 2; cake.position.y = hy; cake.scale.set(1 / Math.sqrt(sy), sy, 1 / Math.sqrt(sy));
+  const dn = (t - CK.dance) / 4, dz = dn >= 0 && dn < 1 ? 1 - dn : 0;
+  cake.rotation.y = Math.sin(t * .7) * .1 + inOut(cl((t - CK.SP) / 1.4)) * Math.PI * 2 + Math.sin(t * 9) * .4 * dz; cake.position.y = hy + Math.abs(Math.sin(t * 7)) * .35 * dz; cake.scale.set(1 / Math.sqrt(sy), sy, 1 / Math.sqrt(sy));
   aim.lerp(mouse, Math.min(1, dt * 4));
   CK.mood += ((CK.happy || t - CK.giggle < 1 ? 1 : 0) - CK.mood) * Math.min(1, dt * 8);
   if (t > CK.nextBlink) { CK.blink = t; CK.nextBlink = t + 2.5 + Math.random() * 3; }
@@ -322,7 +332,7 @@ function popText(x, y, color) {
   t.animate([{ transform: "translate(-50%,-50%) scale(.4) rotate(-10deg)", opacity: 1 }, { transform: "translate(-50%,-120%) scale(1.3) rotate(6deg)", opacity: 0 }], { duration: 650, easing: "ease-out" }).onfinish = () => t.remove();
 }
 let wishEl, finalTimer;
-function clearWish() { $("reply").hidden = true; clearTimeout(finalTimer); if (wishEl) { wishEl.remove(); wishEl = null; } }
+function clearWish() { ["reply", "card", "again"].forEach(i => $(i).hidden = true); clearTimeout(finalTimer); if (wishEl) { wishEl.remove(); wishEl = null; } }
 function showWish(text, x, y, color, keep) {
   if (wishEl) wishEl.remove();
   const el = wishEl = document.createElement("div"); el.className = "wishpop"; el.textContent = text; el.style.borderColor = color;
@@ -332,7 +342,9 @@ function showWish(text, x, y, color, keep) {
   el.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], { duration: 450, delay: 220, easing: "cubic-bezier(.3,1.5,.5,1)", fill: "both" });
   if (!keep) setTimeout(() => { if (wishEl === el) el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: "forwards" }).onfinish = () => el.remove(); }, 4000);
 }
-function showReply() { const R = C.reply; if (!R || !R.url) return; $("reply").textContent = fill(R.label || "Send a thank-you 💌"); $("reply").hidden = false; }
+function showReply() {
+  $("card").hidden = false; $("again").hidden = false;
+  const R = C.reply; if (!R || !R.url) return; $("reply").textContent = fill(R.label || "Send a thank-you 💌"); $("reply").hidden = false; }
 $("reply").onclick = () => {
   const R = C.reply;
   if (/X{4}|YOUR_/.test(R.url)) { alert("Set your link in js/config.js (reply.url)"); return; }
@@ -368,6 +380,78 @@ function popBalloon(b) {
 function startFinal() { $("title").textContent = `Happy Birthday, ${C.name}! 🎂`; $("wish").textContent = ""; show("s4"); go(balS); rain(); }
 $("again").onclick = () => { clearWish(); show("s1"); go(gift); };
 
+/* ---------- Secret: tap the cake 5 times ---------- */
+function secretTap() {
+  CK.taps = CK.taps.filter(x => tNow - x < 3).concat(tNow);
+  if (CK.taps.length >= 5) { CK.taps = []; CK.dance = tNow; CK.giggle = tNow + 3; rain(); setTimeout(rain, 1500); showWish("🎉 You found the secret!", innerWidth / 2, innerHeight * .45, "#ffb703"); }
+}
+
+/* ---------- Save birthday card as a picture ---------- */
+function drawCard(g, W, H, name, text, from, cakeImg) {
+  const F = "Fredoka, ui-rounded, system-ui, sans-serif";
+  const rr = (x, y, w, h, r, c) => { g.fillStyle = c; g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); g.fill(); };
+  const dot = (x, y, r, c) => { g.fillStyle = c; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill(); };
+  const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#ffe9f1"); bg.addColorStop(1, "#cdb4ff"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  [[140, 120, 14], [960, 90, 16], [1000, 640, 12], [90, 700, 10], [110, 1190, 12], [980, 1010, 14], [780, 50, 9]].forEach(([x, y, r]) => {
+    g.fillStyle = "#ffc933"; g.beginPath(); g.moveTo(x, y - r * 2); g.lineTo(x + r * .6, y - r * .6); g.lineTo(x + r * 2, y); g.lineTo(x + r * .6, y + r * .6); g.lineTo(x, y + r * 2); g.lineTo(x - r * .6, y + r * .6); g.lineTo(x - r * 2, y); g.lineTo(x - r * .6, y - r * .6); g.closePath(); g.fill();
+  });
+  g.textAlign = "center"; g.textBaseline = "alphabetic";
+  g.fillStyle = "#3b1a4a"; g.font = `600 96px ${F}`; g.fillText("Happy Birthday", W / 2, 210);
+  let fs = 150; g.font = `600 ${fs}px ${F}`; while (g.measureText(name).width > W - 160 && fs > 60) { fs -= 6; g.font = `600 ${fs}px ${F}`; }
+  g.fillStyle = "#ff5c93"; g.fillText(name, W / 2, 380);
+  if (cakeImg) g.drawImage(cakeImg, 200, 410, 680, 680);
+  else {
+    rr(170, 1010, 740, 40, 20, "#f4effa");
+    rr(230, 840, 620, 170, 36, "#8a4fd0"); rr(230, 840, 620, 44, 22, "#ffd1e3");
+    for (let x = 270, i = 0; x < 820; x += 70, i++) rr(x, 860, 34, 30 + (i % 3) * 14, 17, "#ffd1e3");
+    rr(300, 700, 480, 150, 32, "#ff5c93"); rr(300, 700, 480, 40, 20, "#fff4c4");
+    for (let x = 330, i = 0; x < 760; x += 62, i++) rr(x, 720, 30, 26 + (i % 3) * 12, 15, "#fff4c4");
+    rr(380, 580, 320, 130, 30, "#4cc9f0"); rr(380, 580, 320, 36, 18, "#ffffff");
+    for (let x = 410, i = 0; x < 680; x += 58, i++) rr(x, 598, 28, 22 + (i % 3) * 10, 14, "#ffffff");
+    [470, 610].forEach(x => { dot(x, 790, 16, "#2a1238"); dot(x + 5, 784, 5, "#ffffff"); });
+    dot(425, 822, 18, "#ffb0cf"); dot(655, 822, 18, "#ffb0cf");
+    g.strokeStyle = "#2a1238"; g.lineWidth = 8; g.lineCap = "round"; g.beginPath(); g.arc(540, 800, 34, .15 * Math.PI, .85 * Math.PI); g.stroke();
+    [[470, "#ffb703"], [540, "#7ae582"], [610, "#b388ff"]].forEach(([x, c]) => {
+      rr(x - 9, 480, 18, 100, 6, c);
+      g.fillStyle = "#ffa726"; g.beginPath(); g.ellipse(x, 448, 16, 30, 0, 0, 6.283); g.fill();
+      g.fillStyle = "#fff3c4"; g.beginPath(); g.ellipse(x, 456, 8, 16, 0, 0, 6.283); g.fill();
+    });
+  }
+  g.font = `500 46px ${F}`; g.fillStyle = "#7a5a8c";
+  let line = "", y = 1135;
+  text.split(" ").forEach(w => { const t = line ? line + " " + w : w; if (g.measureText(t).width > 880 && line) { g.fillText(line, W / 2, y); line = w; y += 60; } else line = t; });
+  g.fillText(line, W / 2, y);
+  if (from) { g.font = `600 50px ${F}`; g.fillStyle = "#3b1a4a"; g.fillText("— " + from, W / 2, H - 60); }
+}
+function snapCake() { // renders the real 3D cake (lit candles, happy face) to an image
+  const S = 1080, cam = new THREE.PerspectiveCamera(36, 1, .1, 100);
+  items.forEach(it => { it.g.visible = true; it.g.position.y = it.base; it.g.scale.set(1, 1, 1); });
+  cs.forEach(c => { c.g.visible = true; c.g.position.y = c.y0; c.g.rotation.z = 0; c.flame.visible = true; c.flame.scale.set(1, 1, 1); c.flame.rotation.z = 0; c.light.intensity = .8; c.gl.material.opacity = .7; });
+  cake.rotation.set(0, 0, 0); cake.position.y = 0; cake.scale.set(1, 1, 1);
+  eyes.forEach((e, i) => { e.scale.y = .8; e.position.set((i ? 1 : -1) * .4, .52, 0); }); mouth.scale.setScalar(1.3);
+  cam.position.set(0, 3.2, 10.5); cam.lookAt(0, 1.5, 0);
+  renderer.setPixelRatio(1); renderer.setSize(S, S, false); renderer.render(cakeS.scene, cam);
+  const k = document.createElement("canvas"); k.width = k.height = S; k.getContext("2d").drawImage(renderer.domElement, 0, 0);
+  fit(); return k;
+}
+let CARD;
+async function makeCard() {
+  try { await document.fonts.load("600 90px Fredoka"); } catch (e) {}
+  const k = document.createElement("canvas"); k.width = 1080; k.height = 1350;
+  let cakeImg = null; try { cakeImg = snapCake(); } catch (e) { fit(); }
+  drawCard(k.getContext("2d"), 1080, 1350, C.name, fill(C.cardText || "Wishing you a year full of love, laughter and cake. 🎂"), C.from, cakeImg);
+  const blob = await new Promise(r => k.toBlob(r, "image/png"));
+  CARD = new File([blob], "birthday-card.png", { type: "image/png" });
+  if ($("cardImg").dataset.u) URL.revokeObjectURL($("cardImg").dataset.u);
+  $("cardImg").dataset.u = $("cardImg").src = URL.createObjectURL(blob);
+}
+$("card").onclick = async () => { $("card").disabled = true; try { await makeCard(); $("cardView").hidden = false; } catch (e) {} $("card").disabled = false; };
+$("cardClose").onclick = () => { $("cardView").hidden = true; };
+$("cardSave").onclick = async () => {
+  if (navigator.canShare && navigator.canShare({ files: [CARD] })) { try { await navigator.share({ files: [CARD], title: "Birthday card" }); return; } catch (e) { if (e.name === "AbortError") return; } }
+  const a = document.createElement("a"); a.href = $("cardImg").src; a.download = "birthday-card.png"; document.body.appendChild(a); a.click(); a.remove();
+};
+
 /* ---------- Scene manager ---------- */
 const ray = new THREE.Raycaster();
 const pick = (e, objs) => { ray.setFromCamera(new THREE.Vector2(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1), cur.camera); return ray.intersectObjects(objs, true); };
@@ -375,7 +459,7 @@ $("gl").addEventListener("pointerdown", e => {
   if (cur === gift) openGift();
   else if (cur === cakeS) {
     const h = pick(e, cs.map(c => c.hit));
-    if (h.length) blow(h[0].object.userData.c); else if (CK.ready && pick(e, [t1, t2, t3]).length) { hop(.55, .6); CK.giggle = tNow; }
+    if (h.length) blow(h[0].object.userData.c); else if (CK.ready && pick(e, [t1, t2, t3]).length) { hop(.55, .6); CK.giggle = tNow; secretTap(); }
   } else if (cur === balS) { const h = pick(e, bls.filter(b => !b.popped).map(b => b.body)); if (h.length) popBalloon(h[0].object.userData.b); }
 });
 function go(S) { const c = $("gl"); c.style.opacity = 0; setTimeout(() => { cur = S; S.t0 = tNow; if (S.enter) S.enter(); c.style.opacity = 1; }, 300); }

@@ -26,5 +26,6 @@ window.CONFIG = {
   //   "https://m.me/YOUR_FB_USERNAME"                          (Messenger)
   //   "mailto:you@email.com?subject=Thank%20you&body={msg}"    (email)
   reply: { label: "Reply to {from} on Instagram 💌", url: "https://ig.me/m/404notjeremi", message: "" },
+  cardText: "Wishing you a year full of love, laughter and care. 🫶",
   finalWish: "That’s every wish. Now go eat some cake! 🍰"
 };

@@ -35,3 +35,9 @@ button.ghost{background:transparent;color:var(--muted);box-shadow:none;font-weig
 #s2 { padding-top: 60px; }  /* "Make a wish!" title */
 #s3 { padding-top: 90px; }  /* the message card (Today is all about you...) */
 #s1hint{font-size:1.25rem;font-weight:500;color:var(--text);font-variant-numeric:tabular-nums}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+button.alt{background:transparent;color:var(--text);border:2px solid var(--btn);box-shadow:none}
+#cardView{position:fixed;inset:0;z-index:20;background:#000d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:calc(20px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px))}
+#cardView[hidden]{display:none}
+#cardView img{max-width:100%;max-height:66vh;border-radius:16px;box-shadow:0 12px 40px #0008}
+#cardView p{color:#fff;font-size:1rem}

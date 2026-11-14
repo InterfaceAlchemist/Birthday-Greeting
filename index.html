@@ -42,10 +42,16 @@
   </div>
   <div class="stack">
     <div id="wish" aria-live="polite"></div>
-    <button id="reply" hidden></button>
-    <button class="ghost" id="again">Watch again</button>
+<div class="row"><button id="reply" hidden></button><button class="alt" id="card" hidden>Save card 📸</button></div>
+<button class="ghost" id="again" hidden>↻ Watch again</button>
   </div>
 </section>
+
+<div id="cardView" hidden>
+  <img id="cardImg" alt="Birthday card">
+  <p>Press and hold the picture to save it</p>
+  <div class="row"><button id="cardSave">Save / Share</button><button class="alt" id="cardClose">Close</button></div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script type="module" src="js/config.js"></script>
