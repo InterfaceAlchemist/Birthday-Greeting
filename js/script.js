@@ -1,7 +1,12 @@
 const C = window.CONFIG;
 const fill = s => s.replace("{name}", C.name).replace("{from}", C.from);
 const PHOTOS = (C.photos || []).concat(C.portrait && C.portrait.src ? [C.portrait] : []);
-PHOTOS.forEach(p => { const i = new Image(); i.src = p.src; }); // preload so the photos pop out instantly
+const AR = {}, clampAr = a => Math.max(.55, Math.min(1.6, a || .8)); // photo shapes, so each frame matches its photo
+PHOTOS.forEach(p => { const i = new Image(); i.onload = () => { AR[p.src] = i.naturalWidth / i.naturalHeight; }; i.src = p.src; }); // preload so the photos pop out instantly
+const sizeCard = (el, ar) => { // equal visual area: wide photos get wider frames, tall photos stay narrower
+  const maxW = Math.min(innerWidth * .8, 330) - 18, maxH = Math.min(innerHeight * .36, 330), area = Math.min(innerWidth * .6, 240) * Math.min(innerHeight * .34, 300);
+  const pw = Math.min(maxW, maxH * ar, Math.sqrt(area * ar)); el.style.width = (pw + 18) + "px"; el.querySelector(".ph").style.aspectRatio = String(ar);
+};
 const $ = id => document.getElementById(id);
 const show = id => document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id));
 const cl = t => Math.max(0, Math.min(1, t));
@@ -163,7 +168,8 @@ function startMemories() {
   list.forEach((p, i) => {
     const el = document.createElement("div"); el.className = "polaroid" + (p.hero ? " hero" : "");
     el.innerHTML = '<div class="ph"><img alt=""></div><div class="cap"></div>';
-    const img = el.querySelector("img"); img.src = p.src; img.alt = fill(p.caption || "");
+    const img = el.querySelector("img"); img.alt = fill(p.caption || ""); sizeCard(el, clampAr(AR[p.src]));
+    img.onload = () => sizeCard(el, clampAr(img.naturalWidth / img.naturalHeight)); img.src = p.src;
     el.querySelector(".cap").textContent = fill(p.caption || "");
     el.querySelector(".ph").style.setProperty("--img", `url("${p.src}")`);
     el.style.zIndex = n - i; el.onclick = memNext; stack.appendChild(el); MEM.cards.push(el);
@@ -437,28 +443,28 @@ function secretTap() {
 }
 
 /* ---------- Save birthday card as a picture ---------- */
-function drawCard(g, W, H, name, text, from, cakeImg, faceImg) {
+function drawCard(g, W, H, name, text, from, cakeImg, faceImg, photoImgs) {
   const F = "Fredoka, ui-rounded, system-ui, sans-serif";
   const rr = (x, y, w, h, r, c) => { g.fillStyle = c; g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); g.fill(); };
   const dot = (x, y, r, c) => { g.fillStyle = c; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill(); };
   const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#ffe9f1"); bg.addColorStop(1, "#cdb4ff"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-  [[140, 140, 14], [950, 110, 18], [1010, 760, 12], [80, 920, 10], [130, 1500, 12], [960, 1400, 14], [800, 50, 9], [90, 600, 10]].forEach(([x, y, r]) => {
+  [[120, 110, 14], [960, 90, 18], [1000, 560, 12], [70, 760, 10], [110, 1290, 12], [975, 1280, 14], [820, 40, 9], [90, 500, 10]].forEach(([x, y, r]) => {
     g.fillStyle = "#ffc933"; g.beginPath(); g.moveTo(x, y - r * 2); g.lineTo(x + r * .6, y - r * .6); g.lineTo(x + r * 2, y); g.lineTo(x + r * .6, y + r * .6); g.lineTo(x, y + r * 2); g.lineTo(x - r * .6, y + r * .6); g.lineTo(x - r * 2, y); g.lineTo(x - r * .6, y - r * .6); g.closePath(); g.fill();
   });
   if (faceImg) {
-    const cx = 540, cy = 330, r = 190, ring = g.createLinearGradient(cx - r, cy - r, cx + r, cy + r); ring.addColorStop(0, "#ff5c93"); ring.addColorStop(1, "#ffc933");
+    const cx = 540, cy = 250, r = 150, ring = g.createLinearGradient(cx - r, cy - r, cx + r, cy + r); ring.addColorStop(0, "#ff5c93"); ring.addColorStop(1, "#ffc933");
     g.fillStyle = ring; g.beginPath(); g.arc(cx, cy, r + 16, 0, 6.283); g.fill();
     dot(cx, cy, r + 5, "#ffffff");
     g.save(); g.beginPath(); g.arc(cx, cy, r, 0, 6.283); g.clip(); g.drawImage(faceImg, cx - r, cy - r, r * 2, r * 2); g.restore();
   }
-  g.save(); g.translate(0, faceImg ? 0 : -150);
+  g.save(); g.translate(0, faceImg ? 0 : -120);
   g.textAlign = "center"; g.textBaseline = "alphabetic";
-  g.fillStyle = "#3b1a4a"; g.font = `600 96px ${F}`; g.fillText("Happy Birthday", W / 2, 650);
-  let fs = 150; g.font = `600 ${fs}px ${F}`; while (g.measureText(name).width > W - 160 && fs > 60) { fs -= 6; g.font = `600 ${fs}px ${F}`; }
-  g.fillStyle = "#ff5c93"; g.fillText(name, W / 2, 800);
-  if (cakeImg) g.drawImage(cakeImg, 160, 840, 760, 760);
+  g.fillStyle = "#3b1a4a"; g.font = `600 84px ${F}`; g.fillText("Happy Birthday", W / 2, 520);
+  let fs = 130; g.font = `600 ${fs}px ${F}`; while (g.measureText(name).width > W - 160 && fs > 60) { fs -= 6; g.font = `600 ${fs}px ${F}`; }
+  g.fillStyle = "#ff5c93"; g.fillText(name, W / 2, 650);
+  if (cakeImg) g.drawImage(cakeImg, 220, 660, 640, 640);
   else {
-    g.save(); g.translate(0, 480);
+    g.save(); g.translate(81, 346); g.scale(.85, .85);
       rr(170, 1010, 740, 40, 20, "#f4effa");
       rr(230, 840, 620, 170, 36, "#8a4fd0"); rr(230, 840, 620, 44, 22, "#ffd1e3");
       for (let x = 270, i = 0; x < 820; x += 70, i++) rr(x, 860, 34, 30 + (i % 3) * 14, 17, "#ffd1e3");
@@ -470,17 +476,39 @@ function drawCard(g, W, H, name, text, from, cakeImg, faceImg) {
       dot(425, 822, 18, "#ffb0cf"); dot(655, 822, 18, "#ffb0cf");
       g.strokeStyle = "#2a1238"; g.lineWidth = 8; g.lineCap = "round"; g.beginPath(); g.arc(540, 800, 34, .15 * Math.PI, .85 * Math.PI); g.stroke();
       [[470, "#ffb703"], [540, "#7ae582"], [610, "#b388ff"]].forEach(([x, c]) => {
-        rr(x - 9, 480, 18, 100, 6, c);
-        g.fillStyle = "#ffa726"; g.beginPath(); g.ellipse(x, 448, 16, 30, 0, 0, 6.283); g.fill();
-        g.fillStyle = "#fff3c4"; g.beginPath(); g.ellipse(x, 456, 8, 16, 0, 0, 6.283); g.fill();
+      rr(x - 9, 480, 18, 100, 6, c);
+      g.fillStyle = "#ffa726"; g.beginPath(); g.ellipse(x, 448, 16, 30, 0, 0, 6.283); g.fill();
+      g.fillStyle = "#fff3c4"; g.beginPath(); g.ellipse(x, 456, 8, 16, 0, 0, 6.283); g.fill();
       });
     g.restore();
   }
-  g.font = `500 44px ${F}`; g.fillStyle = "#7a5a8c";
-  let line = "", y = 1690;
-  text.split(" ").forEach(w => { const t = line ? line + " " + w : w; if (g.measureText(t).width > 880 && line) { g.fillText(line, W / 2, y); line = w; y += 58; } else line = t; });
-  g.fillText(line, W / 2, y);
-  if (from) { g.font = `600 50px ${F}`; g.fillStyle = "#3b1a4a"; g.fillText("— " + from, W / 2, y + 100); }
+  const ph = photoImgs || [];
+  if (ph.length) { // every memory photo, as a strip of small polaroids (equal area, so landscape ones are wider)
+    const cols = Math.max(Math.min(ph.length, 6), Math.ceil(ph.length / 2)), gap = 14, rows = [];
+    for (let i = 0; i < ph.length; i += cols) rows.push(ph.slice(i, i + cols));
+    const lay2 = rows.map(row => {
+      const it = row.map(im => { const ar = Math.max(.55, Math.min(1.6, im.width / im.height)); let pw = Math.sqrt(18500 * ar); if (pw / ar > 150) pw = 150 * ar; return { im, ar, pw }; });
+      const k = Math.min(1, 980 / (it.reduce((a, o) => a + o.pw + 16, 0) + gap * (it.length - 1)));
+      it.forEach(o => { o.pw *= k; o.ph = o.pw / o.ar; o.fw = o.pw + 16; o.fh = o.ph + 34; });
+      return { it, rowW: it.reduce((a, o) => a + o.fw, 0) + gap * (it.length - 1), rowH: Math.max(...it.map(o => o.fh)) };
+    });
+    let y = 1320 + (360 - (lay2.reduce((a, r) => a + r.rowH, 0) + gap * (lay2.length - 1))) / 2, n = 0;
+    lay2.forEach(({ it, rowW, rowH }) => {
+      let x = (W - rowW) / 2;
+      it.forEach(o => {
+        g.save(); g.translate(x + o.fw / 2, y + rowH / 2); g.rotate(((n++ * 7) % 5 - 2) * .028);
+        g.shadowColor = "rgba(0,0,0,.22)"; g.shadowBlur = 10; g.shadowOffsetY = 4; g.fillStyle = "#fff"; g.fillRect(-o.fw / 2, -o.fh / 2, o.fw, o.fh); g.shadowColor = "transparent";
+        const sc = Math.max(o.pw / o.im.width, o.ph / o.im.height), sw = o.pw / sc, sh = o.ph / sc;
+        g.drawImage(o.im, (o.im.width - sw) / 2, (o.im.height - sh) / 2, sw, sh, -o.fw / 2 + 8, -o.fh / 2 + 8, o.pw, o.ph);
+        g.restore(); x += o.fw + gap;
+      });
+      y += rowH + gap;
+    });
+  }
+  const lay = sz => { g.font = `500 ${sz}px ${F}`; const o = []; let line = ""; text.split(" ").forEach(w => { const t = line ? line + " " + w : w; if (g.measureText(t).width > 900 && line) { o.push(line); line = w; } else line = t; }); o.push(line); return o; };
+  let sz = 44, lines = lay(sz); while (lines.length > 2 && sz > 30) { sz -= 4; lines = lay(sz); }
+  g.font = `500 ${sz}px ${F}`; g.fillStyle = "#7a5a8c"; lines.forEach((l, i) => g.fillText(l, W / 2, 1738 + i * (sz + 14)));
+  if (from) { g.font = `600 46px ${F}`; g.fillStyle = "#3b1a4a"; g.fillText("— " + from, W / 2, 1738 + (lines.length - 1) * (sz + 14) + 72); }
   g.restore();
 }
 const loadImg = src => new Promise(res => { if (!src) return res(null); const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
@@ -501,7 +529,8 @@ async function makeCard() {
   const k = document.createElement("canvas"); k.width = 1080; k.height = 1920;
   let cakeImg = null; try { cakeImg = snapCake(); } catch (e) { fit(); }
   const faceImg = await loadImg(C.portrait && C.portrait.face);
-  drawCard(k.getContext("2d"), 1080, 1920, C.name, fill(C.cardText || "Wishing you a year full of love, laughter and cake. 🎂"), C.from, cakeImg, faceImg);
+  const photoImgs = (await Promise.all((C.photos || []).map(p => loadImg(p.src)))).filter(Boolean);
+  drawCard(k.getContext("2d"), 1080, 1920, C.name, fill(C.cardText || "Wishing you a year full of love, laughter and cake. 🎂"), C.from, cakeImg, faceImg, photoImgs);
   const blob = await new Promise(r => k.toBlob(r, "image/png"));
   CARD = new File([blob], "birthday-card.png", { type: "image/png" });
   if ($("cardImg").dataset.u) URL.revokeObjectURL($("cardImg").dataset.u);

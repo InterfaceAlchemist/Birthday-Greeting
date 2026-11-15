@@ -51,7 +51,7 @@ button.alt{background:transparent;color:var(--text);border:2px solid var(--btn);
 .polaroid.settled{transition:transform .45s cubic-bezier(.3,1.4,.5,1)}
 .polaroid .ph{position:relative;aspect-ratio:4/5;overflow:hidden;border-radius:3px;background:#e9ddff}
 .polaroid .ph::before{content:"";position:absolute;inset:-12px;background:var(--img) center/cover;filter:blur(14px) brightness(.92)}
-.polaroid .ph img{position:relative;display:block;width:100%;height:100%;object-fit:contain}
+.polaroid .ph img{position:relative;display:block;width:100%;height:100%;object-fit:cover}
 .polaroid .cap{display:flex;align-items:center;justify-content:center;min-height:46px;padding:4px 6px;font-size:.95rem;font-weight:500;line-height:1.2;text-align:center}
 .polaroid.hero{box-shadow:0 0 0 4px #ffc933,0 14px 34px #0006}
 .polaroid.hero .cap{font-size:1.05rem;font-weight:600;color:#ff3d7f}
