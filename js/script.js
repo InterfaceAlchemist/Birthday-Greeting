@@ -1,5 +1,7 @@
 const C = window.CONFIG;
 const fill = s => s.replace("{name}", C.name).replace("{from}", C.from);
+const PHOTOS = (C.photos || []).concat(C.portrait && C.portrait.src ? [C.portrait] : []);
+PHOTOS.forEach(p => { const i = new Image(); i.src = p.src; }); // preload so the photos pop out instantly
 const $ = id => document.getElementById(id);
 const show = id => document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id));
 const cl = t => Math.max(0, Math.min(1, t));
@@ -121,7 +123,7 @@ const shackle = mesh(new THREE.TorusGeometry(.17, .045, 10, 24, Math.PI), mat(0x
 const kh = mesh(new THREE.CylinderGeometry(.05, .05, .04, 10), mat(0x3a2a00), 0, 0, .11); kh.rotation.x = Math.PI / 2; lockG.add(kh);
 const LK = { locked: false, fall: 1e9 };
 const gSp = sparkles(gift, 16, 2.8, 0, 4.5), GS = { open: false, t0: 0, nope: -9 };
-gift.enter = () => { lockG.visible = LK.locked; lockG.position.set(0, 1, 1.4); lockG.rotation.set(0, 0, 0); shackle.position.y = .25; gift.off.y = 1.9; GS.open = false; lid.position.set(0, 1.8, 0); lid.rotation.set(0, 0, 0); gG.rotation.set(0, 0, 0); gGlow.material.opacity = 0; gLight.intensity = 0; };
+gift.enter = () => { lockG.visible = LK.locked; lockG.position.set(0, 1, 1.4); lockG.rotation.set(0, 0, 0); shackle.position.y = .25; gift.off.y = 1.9; gift.look.y = 1.3; GS.open = false; lid.position.set(0, 1.8, 0); lid.rotation.set(0, 0, 0); gG.rotation.set(0, 0, 0); gGlow.material.opacity = 0; gLight.intensity = 0; };
 gift.update = (t, dt) => {
   const lt = t - gift.t0; gSp(t, dt);
   if (!GS.open) {
@@ -134,7 +136,7 @@ gift.update = (t, dt) => {
   }
   const a = t - GS.t0, u = cl((a - .35) / 1);
   gG.rotation.z = a < .4 ? Math.sin(a * 60) * .09 * (1 - a / .4) : 0;
-  gift.off.y = 1.9 + 3.6 * (1 - Math.pow(1 - cl((a - .3) / .9), 3));
+  const ez = 1 - Math.pow(1 - cl((a - .3) / .9), 3); gift.off.y = 1.9 + 3.6 * ez; gift.look.y = 1.3 + (PHOTOS.length ? 1.6 * ez : 0);
   lid.position.set(u * 1.2, 1.8 + (1 - Math.pow(1 - u, 3)) * 7, 0); lid.rotation.set(u * .9, 0, -u * 1.3);
   gGlow.material.opacity = u > 0 ? Math.sin(Math.min(1, u * 1.5) * Math.PI) * .95 : 0; gGlow.scale.setScalar(1 + u * 7); gLight.intensity = u > 0 ? (1 - u) * 3 : 0;
 };
@@ -143,8 +145,56 @@ function openGift() {
   if (isLocked()) { GS.nope = tNow; clink(); if (navigator.vibrate) navigator.vibrate(30); showWish("🔒 Still locked! It opens when the countdown ends.", innerWidth / 2, innerHeight * .4, "#ffb703"); return; }
   GS.open = true; GS.t0 = tNow;
   setTimeout(() => burst(innerWidth / 2, innerHeight / 2, 90), 450);
-  setTimeout(() => { show("s2"); go(cakeS); }, 1500);
+  if (PHOTOS.length) setTimeout(startMemories, 1000); else setTimeout(() => { show("s2"); go(cakeS); }, 1500);
 }
+
+/* ---------- Photo memories: pop out of the opened gift ---------- */
+let MEM = { i: 0, cards: [], busy: false };
+function startMemories() {
+  const stack = $("stack"); stack.innerHTML = ""; MEM = { i: 0, cards: [], busy: true };
+  $("smTitle").textContent = fill(C.memoriesTitle || "A few memories, {name} 💛");
+  show("sm");
+  const list = (C.photos || []).map(p => ({ src: p.src, caption: p.caption, hero: false }));
+  if (C.portrait && C.portrait.src) list.push({ src: C.portrait.src, caption: C.portrait.caption || "Happy Birthday, {name}! 🎂", hero: true });
+  const R = stack.getBoundingClientRect(), ox = R.left + R.width / 2, oy = R.top + R.height / 2;
+  const v = new THREE.Vector3(0, 2, 0).project(gift.camera), sx = (v.x + 1) / 2 * innerWidth, sy = (1 - v.y) / 2 * innerHeight; // top of the opened box
+  const dx0 = sx - ox, dy0 = sy - oy, n = list.length;
+  burst(sx, sy, 70);
+  list.forEach((p, i) => {
+    const el = document.createElement("div"); el.className = "polaroid" + (p.hero ? " hero" : "");
+    el.innerHTML = '<div class="ph"><img alt=""></div><div class="cap"></div>';
+    const img = el.querySelector("img"); img.src = p.src; img.alt = fill(p.caption || "");
+    el.querySelector(".cap").textContent = fill(p.caption || "");
+    el.querySelector(".ph").style.setProperty("--img", `url("${p.src}")`);
+    el.style.zIndex = n - i; el.onclick = memNext; stack.appendChild(el); MEM.cards.push(el);
+    const rot = i === 0 ? -2 : ((i * 37) % 15) - 7, tx = i === 0 ? 0 : ((i * 53) % 25) - 12, ty = i === 0 ? 0 : ((i * 29) % 17) - 8, delay = (n - 1 - i) * 130;
+    const A = `translate(-50%,-50%) translate(${dx0}px,${dy0}px) rotate(${rot * 6}deg) scale(.15)`;
+    const B = `translate(-50%,-50%) translate(${dx0 * .35 + tx}px,${dy0 * .35 - 150}px) rotate(${rot * 3}deg) scale(1.12)`;
+    const E = `translate(-50%,-50%) translate(${tx}px,${ty}px) rotate(${rot}deg) scale(1)`;
+    el.style.transform = A; el.style.opacity = 0;
+    const a = el.animate([{ transform: A, opacity: 0 }, { transform: B, opacity: 1, offset: .5 }, { transform: E, opacity: 1 }], { duration: 900, delay, easing: "cubic-bezier(.25,.9,.3,1.08)", fill: "both" });
+    a.onfinish = () => { el.style.transform = E; el.style.opacity = 1; a.cancel(); void el.offsetWidth; el.classList.add("settled"); };
+    setTimeout(() => { burst(sx, sy, 14); popSound(); }, delay);
+  });
+  updateMem(); setTimeout(() => { MEM.busy = false; }, (n - 1) * 130 + 950);
+}
+function updateMem() {
+  const n = MEM.cards.length, left = n - MEM.i;
+  $("smCount").textContent = Math.min(MEM.i + 1, n) + " / " + n;
+  $("smNext").textContent = left <= 1 ? "Now make a wish 🎂" : "Next ➜";
+  $("smSkip").hidden = left <= 1;
+}
+function memNext() {
+  if (MEM.busy) return;
+  if (MEM.cards.length - MEM.i <= 1) { memDone(); return; }
+  MEM.busy = true; const el = MEM.cards[MEM.i], dir = MEM.i % 2 ? -1 : 1; MEM.i++;
+  el.style.pointerEvents = "none";
+  el.animate([{ transform: el.style.transform, opacity: 1 }, { transform: `translate(-50%,-50%) translate(${dir * innerWidth * .9}px,-40px) rotate(${dir * 28}deg)`, opacity: 0 }], { duration: 480, easing: "cubic-bezier(.5,0,.9,.5)", fill: "forwards" }).onfinish = () => { el.remove(); MEM.busy = false; };
+  MEM.cards[MEM.i].style.transform = "translate(-50%,-50%) rotate(0deg) scale(1.02)";
+  updateMem();
+}
+function memDone() { MEM.busy = true; show("s2"); go(cakeS); }
+$("smNext").onclick = memNext; $("smSkip").onclick = memDone;
 
 /* ---------- Scene 2: living cake ---------- */
 const cakeS = makeScene(2.9, [0, 3.8, 12], [0, 1.3, 0]); ground(cakeS, -1.26);
@@ -387,42 +437,53 @@ function secretTap() {
 }
 
 /* ---------- Save birthday card as a picture ---------- */
-function drawCard(g, W, H, name, text, from, cakeImg) {
+function drawCard(g, W, H, name, text, from, cakeImg, faceImg) {
   const F = "Fredoka, ui-rounded, system-ui, sans-serif";
   const rr = (x, y, w, h, r, c) => { g.fillStyle = c; g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); g.fill(); };
   const dot = (x, y, r, c) => { g.fillStyle = c; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill(); };
   const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#ffe9f1"); bg.addColorStop(1, "#cdb4ff"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-  [[140, 120, 14], [960, 90, 16], [1000, 640, 12], [90, 700, 10], [110, 1190, 12], [980, 1010, 14], [780, 50, 9]].forEach(([x, y, r]) => {
+  [[140, 140, 14], [950, 110, 18], [1010, 760, 12], [80, 920, 10], [130, 1500, 12], [960, 1400, 14], [800, 50, 9], [90, 600, 10]].forEach(([x, y, r]) => {
     g.fillStyle = "#ffc933"; g.beginPath(); g.moveTo(x, y - r * 2); g.lineTo(x + r * .6, y - r * .6); g.lineTo(x + r * 2, y); g.lineTo(x + r * .6, y + r * .6); g.lineTo(x, y + r * 2); g.lineTo(x - r * .6, y + r * .6); g.lineTo(x - r * 2, y); g.lineTo(x - r * .6, y - r * .6); g.closePath(); g.fill();
   });
-  g.textAlign = "center"; g.textBaseline = "alphabetic";
-  g.fillStyle = "#3b1a4a"; g.font = `600 96px ${F}`; g.fillText("Happy Birthday", W / 2, 210);
-  let fs = 150; g.font = `600 ${fs}px ${F}`; while (g.measureText(name).width > W - 160 && fs > 60) { fs -= 6; g.font = `600 ${fs}px ${F}`; }
-  g.fillStyle = "#ff5c93"; g.fillText(name, W / 2, 380);
-  if (cakeImg) g.drawImage(cakeImg, 200, 410, 680, 680);
-  else {
-    rr(170, 1010, 740, 40, 20, "#f4effa");
-    rr(230, 840, 620, 170, 36, "#8a4fd0"); rr(230, 840, 620, 44, 22, "#ffd1e3");
-    for (let x = 270, i = 0; x < 820; x += 70, i++) rr(x, 860, 34, 30 + (i % 3) * 14, 17, "#ffd1e3");
-    rr(300, 700, 480, 150, 32, "#ff5c93"); rr(300, 700, 480, 40, 20, "#fff4c4");
-    for (let x = 330, i = 0; x < 760; x += 62, i++) rr(x, 720, 30, 26 + (i % 3) * 12, 15, "#fff4c4");
-    rr(380, 580, 320, 130, 30, "#4cc9f0"); rr(380, 580, 320, 36, 18, "#ffffff");
-    for (let x = 410, i = 0; x < 680; x += 58, i++) rr(x, 598, 28, 22 + (i % 3) * 10, 14, "#ffffff");
-    [470, 610].forEach(x => { dot(x, 790, 16, "#2a1238"); dot(x + 5, 784, 5, "#ffffff"); });
-    dot(425, 822, 18, "#ffb0cf"); dot(655, 822, 18, "#ffb0cf");
-    g.strokeStyle = "#2a1238"; g.lineWidth = 8; g.lineCap = "round"; g.beginPath(); g.arc(540, 800, 34, .15 * Math.PI, .85 * Math.PI); g.stroke();
-    [[470, "#ffb703"], [540, "#7ae582"], [610, "#b388ff"]].forEach(([x, c]) => {
-      rr(x - 9, 480, 18, 100, 6, c);
-      g.fillStyle = "#ffa726"; g.beginPath(); g.ellipse(x, 448, 16, 30, 0, 0, 6.283); g.fill();
-      g.fillStyle = "#fff3c4"; g.beginPath(); g.ellipse(x, 456, 8, 16, 0, 0, 6.283); g.fill();
-    });
+  if (faceImg) {
+    const cx = 540, cy = 330, r = 190, ring = g.createLinearGradient(cx - r, cy - r, cx + r, cy + r); ring.addColorStop(0, "#ff5c93"); ring.addColorStop(1, "#ffc933");
+    g.fillStyle = ring; g.beginPath(); g.arc(cx, cy, r + 16, 0, 6.283); g.fill();
+    dot(cx, cy, r + 5, "#ffffff");
+    g.save(); g.beginPath(); g.arc(cx, cy, r, 0, 6.283); g.clip(); g.drawImage(faceImg, cx - r, cy - r, r * 2, r * 2); g.restore();
   }
-  g.font = `500 46px ${F}`; g.fillStyle = "#7a5a8c";
-  let line = "", y = 1135;
-  text.split(" ").forEach(w => { const t = line ? line + " " + w : w; if (g.measureText(t).width > 880 && line) { g.fillText(line, W / 2, y); line = w; y += 60; } else line = t; });
+  g.save(); g.translate(0, faceImg ? 0 : -150);
+  g.textAlign = "center"; g.textBaseline = "alphabetic";
+  g.fillStyle = "#3b1a4a"; g.font = `600 96px ${F}`; g.fillText("Happy Birthday", W / 2, 650);
+  let fs = 150; g.font = `600 ${fs}px ${F}`; while (g.measureText(name).width > W - 160 && fs > 60) { fs -= 6; g.font = `600 ${fs}px ${F}`; }
+  g.fillStyle = "#ff5c93"; g.fillText(name, W / 2, 800);
+  if (cakeImg) g.drawImage(cakeImg, 160, 840, 760, 760);
+  else {
+    g.save(); g.translate(0, 480);
+      rr(170, 1010, 740, 40, 20, "#f4effa");
+      rr(230, 840, 620, 170, 36, "#8a4fd0"); rr(230, 840, 620, 44, 22, "#ffd1e3");
+      for (let x = 270, i = 0; x < 820; x += 70, i++) rr(x, 860, 34, 30 + (i % 3) * 14, 17, "#ffd1e3");
+      rr(300, 700, 480, 150, 32, "#ff5c93"); rr(300, 700, 480, 40, 20, "#fff4c4");
+      for (let x = 330, i = 0; x < 760; x += 62, i++) rr(x, 720, 30, 26 + (i % 3) * 12, 15, "#fff4c4");
+      rr(380, 580, 320, 130, 30, "#4cc9f0"); rr(380, 580, 320, 36, 18, "#ffffff");
+      for (let x = 410, i = 0; x < 680; x += 58, i++) rr(x, 598, 28, 22 + (i % 3) * 10, 14, "#ffffff");
+      [470, 610].forEach(x => { dot(x, 790, 16, "#2a1238"); dot(x + 5, 784, 5, "#ffffff"); });
+      dot(425, 822, 18, "#ffb0cf"); dot(655, 822, 18, "#ffb0cf");
+      g.strokeStyle = "#2a1238"; g.lineWidth = 8; g.lineCap = "round"; g.beginPath(); g.arc(540, 800, 34, .15 * Math.PI, .85 * Math.PI); g.stroke();
+      [[470, "#ffb703"], [540, "#7ae582"], [610, "#b388ff"]].forEach(([x, c]) => {
+        rr(x - 9, 480, 18, 100, 6, c);
+        g.fillStyle = "#ffa726"; g.beginPath(); g.ellipse(x, 448, 16, 30, 0, 0, 6.283); g.fill();
+        g.fillStyle = "#fff3c4"; g.beginPath(); g.ellipse(x, 456, 8, 16, 0, 0, 6.283); g.fill();
+      });
+    g.restore();
+  }
+  g.font = `500 44px ${F}`; g.fillStyle = "#7a5a8c";
+  let line = "", y = 1690;
+  text.split(" ").forEach(w => { const t = line ? line + " " + w : w; if (g.measureText(t).width > 880 && line) { g.fillText(line, W / 2, y); line = w; y += 58; } else line = t; });
   g.fillText(line, W / 2, y);
-  if (from) { g.font = `600 50px ${F}`; g.fillStyle = "#3b1a4a"; g.fillText("— " + from, W / 2, H - 60); }
+  if (from) { g.font = `600 50px ${F}`; g.fillStyle = "#3b1a4a"; g.fillText("— " + from, W / 2, y + 100); }
+  g.restore();
 }
+const loadImg = src => new Promise(res => { if (!src) return res(null); const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
 function snapCake() { // renders the real 3D cake (lit candles, happy face) to an image
   const S = 1080, cam = new THREE.PerspectiveCamera(36, 1, .1, 100);
   items.forEach(it => { it.g.visible = true; it.g.position.y = it.base; it.g.scale.set(1, 1, 1); });
@@ -437,9 +498,10 @@ function snapCake() { // renders the real 3D cake (lit candles, happy face) to a
 let CARD;
 async function makeCard() {
   try { await document.fonts.load("600 90px Fredoka"); } catch (e) {}
-  const k = document.createElement("canvas"); k.width = 1080; k.height = 1350;
+  const k = document.createElement("canvas"); k.width = 1080; k.height = 1920;
   let cakeImg = null; try { cakeImg = snapCake(); } catch (e) { fit(); }
-  drawCard(k.getContext("2d"), 1080, 1350, C.name, fill(C.cardText || "Wishing you a year full of love, laughter and cake. 🎂"), C.from, cakeImg);
+  const faceImg = await loadImg(C.portrait && C.portrait.face);
+  drawCard(k.getContext("2d"), 1080, 1920, C.name, fill(C.cardText || "Wishing you a year full of love, laughter and cake. 🎂"), C.from, cakeImg, faceImg);
   const blob = await new Promise(r => k.toBlob(r, "image/png"));
   CARD = new File([blob], "birthday-card.png", { type: "image/png" });
   if ($("cardImg").dataset.u) URL.revokeObjectURL($("cardImg").dataset.u);
